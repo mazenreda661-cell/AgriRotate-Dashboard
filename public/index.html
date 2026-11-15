@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AgriRotate – Crop Rotation Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#050912;--card:#1e2736;--side:#0b1220;--bd:#2c3a50;--tx:#f1f5f9;--mu:#94a3b8;--g:#22c55e;--y:#eab308;--r:#ef4444;--b:#3b82f6}
+[data-theme=light]{--bg:#f1f5f9;--card:#fff;--side:#fff;--bd:#d5dde8;--tx:#0f172a;--mu:#64748b}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Tahoma,sans-serif;background:var(--bg);color:var(--tx);display:flex;height:100vh;overflow:hidden}
+aside{width:300px;background:var(--side);border-right:1px solid var(--bd);padding:16px;display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.logo{display:flex;gap:12px;align-items:center;padding:6px 4px 16px;border-bottom:1px solid var(--bd);margin-bottom:10px}
+.logo i{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#22c55e,#16a34a);display:grid;place-items:center;font-style:normal;font-size:24px}
+.logo b{font-size:22px}.logo b span{color:var(--g)}.logo small{display:block;color:var(--mu)}
+nav button{all:unset;cursor:pointer;display:flex;gap:14px;align-items:center;padding:14px 16px;border-radius:12px;color:var(--mu);font-weight:600;width:calc(100% - 32px);border:1px solid transparent}
+nav button.on{background:rgba(34,197,94,.15);color:var(--g);border-color:rgba(34,197,94,.4)}
+.foot{margin-top:auto;color:var(--mu);font-size:13px;padding:8px}
+main{flex:1;display:flex;flex-direction:column;min-width:0}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 26px;border-bottom:1px solid var(--bd)}
+.pill{border:1px solid var(--bd);background:var(--card);padding:8px 16px;border-radius:99px;font-size:14px;font-weight:600}
+.pill.w{border-color:#b45309;color:var(--y)}.pill.ok{border-color:#15803d;color:var(--g)}
+#pages{flex:1;overflow:auto;padding:26px 36px 70px}
+.page{display:none}.page.on{display:block}
+h1{margin:0 0 4px;font-size:32px}.sub{color:var(--mu);margin:0 0 22px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:20px;margin-bottom:20px}
+.card h3{margin:0 0 14px;font-size:17px}
+.grid{display:grid;gap:18px}.g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:1fr 1fr}
+.kpi{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:20px;min-height:110px}
+.kpi small{color:var(--mu);letter-spacing:.5px;font-weight:600}.kpi div{font-size:34px;font-weight:700;margin-top:10px}.kpi div span{font-size:15px;color:var(--mu);font-weight:400}
+#map{height:420px;border-radius:12px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+select,input[type=text],input[type=number]{background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;font-size:15px}
+.alert{border:1px solid #7f1d1d;background:rgba(127,29,29,.35);border-radius:12px;padding:14px 18px}.alert.ok{border-color:#14532d;background:rgba(20,83,45,.35)}
+.gauge{text-align:center;padding:16px;border:1px solid var(--bd);border-radius:14px}
+.gauge svg{width:150px;height:150px}.gauge .v{font-size:30px;font-weight:700}
+.badge{display:inline-block;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700;background:#450a0a;color:#fca5a5}.badge.good{background:#14532d;color:#86efac}.badge.mid{background:#422006;color:#fde047}
+.opt{cursor:pointer;border:1px solid var(--bd);border-radius:14px;padding:14px;background:var(--card)}.opt.on{border-color:var(--g);background:rgba(34,197,94,.1)}
+.opt b{display:block;margin-top:8px}.pts{float:right;background:rgba(34,197,94,.2);color:var(--g);border-radius:99px;padding:2px 10px;font-size:13px}
+.season{border:1px solid var(--bd);border-radius:14px;padding:16px}.season h2{margin:8px 0;font-size:24px}
+.tag{display:inline-block;font-size:12px;padding:3px 9px;border-radius:6px;margin:2px;background:#1e3a8a;color:#bfdbfe}.tag.n{background:#14532d;color:#86efac}.tag.r{background:#4c1d95;color:#ddd6fe}
+.sl{margin:14px 0}.sl label{display:flex;justify-content:space-between;font-weight:600}input[type=range]{width:100%;accent-color:var(--g)}
+.btn{background:var(--g);color:#052e16;border:0;border-radius:10px;padding:11px 20px;font-weight:700;cursor:pointer;font-size:15px}.btn.o{background:#f59e0b}
+ul.cl{list-style:none;padding:0;margin:0}ul.cl li{padding:5px 0}
+.big{font-size:32px;font-weight:700}
+#chatBtn{position:fixed;right:22px;bottom:50px;background:var(--g);color:#052e16;border:0;border-radius:99px;padding:14px 22px;font-weight:700;font-size:16px;cursor:pointer;box-shadow:0 6px 20px #0006;z-index:999}
+#chat{position:fixed;right:22px;bottom:110px;width:370px;height:480px;background:var(--card);border:1px solid var(--bd);border-radius:16px;display:none;flex-direction:column;z-index:999;overflow:hidden}
+#chat.on{display:flex}#chat header{padding:12px 16px;font-weight:700;background:var(--g);color:#052e16}
+#msgs{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.m{max-width:85%;padding:9px 13px;border-radius:12px;white-space:pre-wrap;line-height:1.5;font-size:14px}.m.u{align-self:flex-end;background:var(--g);color:#052e16}.m.b{background:var(--bg)}
+#chat form{display:flex;gap:6px;padding:10px;border-top:1px solid var(--bd)}#chat input{flex:1}
+footer{position:fixed;bottom:0;left:300px;right:0;background:var(--side);border-top:1px solid var(--bd);padding:10px 26px;display:flex;justify-content:space-between;color:var(--mu);font-size:14px}
+@media(max-width:900px){aside{display:none}footer{left:0}.g4,.g3,.g2{grid-template-columns:1fr 1fr}#pages{padding:16px}}
+@media print{aside,header,#chatBtn,#chat,footer{display:none}body{display:block;height:auto;overflow:visible}#pages{overflow:visible}.page{display:block!important}}
+</style></head><body>
+<aside>
+ <div class="logo"><i>🌾</i><div><b>Agri<span>Rotate</span></b><small>Crop Rotation Dashboard</small></div></div>
+ <nav>
+  <button data-p="overview" class="on">🌱 Overview</button><button data-p="nasa">🛰️ NASA Data</button>
+  <button data-p="sensors">📟 Soil Sensors</button><button data-p="planner">🔄 Rotation Planner</button>
+  <button data-p="whatif">🔮 What-If Simulator</button><button data-p="settings">⚙️ Settings</button>
+ </nav>
+ <div class="foot">AgriRotate v1.0 • NASA Hackathon</div>
+</aside>
+<main>
+<header><span class="pill">📍 <b id="coords"></b></span><span class="pill w" id="stat">● Waiting for circuit</span></header>
+<div id="pages">
+
+<section class="page on" id="overview">
+ <div class="row"><div><h1>🌾 Farm Overview</h1><p class="sub">Latest available data: <b id="upd">loading…</b></p></div>
+  <select id="preset"></select></div>
+ <div class="card"><div class="row" style="margin-bottom:12px"><span><b>🗺️ Interactive Farm Field Locator</b> • Click map or select preset to update coordinates</span><span id="ll"></span></div><div id="map"></div></div>
+ <div class="grid g4">
+  <div class="kpi"><small>TEMPERATURE</small><div><b id="k_t">–</b> <span>°C</span></div></div>
+  <div class="kpi"><small>RAINFALL (7 DAYS)</small><div><b id="k_r7">–</b> <span>mm</span></div></div>
+  <div class="kpi"><small>RAINFALL (30 DAYS)</small><div><b id="k_r30">–</b> <span>mm</span></div></div>
+  <div class="kpi"><small>HUMIDITY</small><div><b id="k_h">–</b> <span>%</span></div></div>
+  <div class="kpi"><small>SOLAR RADIATION</small><div><b id="k_s">–</b> <span>MJ/m²</span></div></div>
+  <div class="kpi"><small>WIND SPEED</small><div><b id="k_w">–</b> <span>m/s</span></div></div>
+  <div class="kpi"><small>ROOT-ZONE WETNESS</small><div><b id="k_g">–</b> <span>% GWETROOT</span></div></div>
+  <div class="kpi gauge" style="text-align:center"><small>FARM HEALTH SCORE</small><div id="health" style="font-size:36px;margin:6px 0">–</div><span id="healthTxt" style="color:var(--mu)"></span></div>
+ </div>
+</section>
+
+<section class="page" id="nasa">
+ <div class="row"><div><h1>🛰️ NASA Environmental Data</h1><p class="sub">NASA POWER Daily Point API • 90-day observation window</p></div><button class="btn" onclick="loadNASA()">🔄 Refresh NASA Data</button></div>
+ <div class="card"><h3>🚨 Climate Alerts</h3><div class="grid g2" id="alerts"></div></div>
+ <div class="card"><h3>💧 NASA Satellite Soil Wetness Fractions (SMAP/MERRA-2)</h3><div class="grid g3" id="gauges"></div></div>
+ <div class="grid g2"><div class="card"><h3>🌡️ Temperature Trends</h3><canvas id="chT"></canvas></div><div class="card"><h3>🌧️ Precipitation</h3><canvas id="chP"></canvas></div></div>
+</section>
+
+<section class="page" id="sensors">
+ <div class="row"><div><h1>📟 Live Soil Sensors</h1><p class="sub">Real-time telemetry via Node.js serial bridge + WebSocket. Sensors stay idle until the circuit is connected.</p></div><span class="pill w" id="stat2">● Waiting for circuit</span></div>
+ <div class="card" style="border-color:#166534"><h3>🛰️ VS 📟 SENSOR VS SATELLITE</h3><div class="grid g3">
+  <div class="gauge"><div>Sensor (Capacitive)</div><div class="big" id="cmpS">—</div><small>Field root zone</small></div>
+  <div class="gauge"><div>Satellite (GWETROOT)</div><div class="big" style="color:var(--b)" id="cmpN">—</div><small>NASA SMAP/POWER (0-100cm)</small></div>
+  <div class="gauge"><div>Difference (Δ Moisture)</div><div class="big" id="cmpD">—</div><small id="cmpT">Awaiting readings</small></div></div></div>
+ <div class="grid g2">
+  <div class="card gauge"><h3>💧 Soil Moisture</h3><div class="big" id="s_m">—</div><p><span class="badge" id="b_m">UNKNOWN</span></p><small>Optimal range: 35% - 70%</small></div>
+  <div class="card gauge"><h3>🌡️ Soil Temperature</h3><div class="big" id="s_t">—</div><p><span class="badge" id="b_t">UNKNOWN</span></p><small>Optimal biological range: 15°C - 30°C</small></div></div>
+ <div class="card"><h3>🌱 NPK Soil Macronutrients (RS485 Probe)</h3><div class="grid g3">
+  <div class="gauge"><small>NITROGEN (N)</small><div class="big" id="s_n">—</div><small>Available Nitrogen (mg/kg)</small></div>
+  <div class="gauge"><small>PHOSPHORUS (P)</small><div class="big" id="s_p">—</div><small>Available Phosphorus (mg/kg)</small></div>
+  <div class="gauge"><small>POTASSIUM (K)</small><div class="big" id="s_k">—</div><small>Available Potassium (mg/kg)</small></div></div></div>
+ <div class="card"><h3>📈 Live Readings (Last Hour)</h3><p id="waitMsg" style="color:var(--mu);text-align:center;padding:40px 0">Waiting for initial telemetry packets…</p><canvas id="chL" style="display:none"></canvas></div>
+</section>
+
+<section class="page" id="planner">
+ <div class="row"><div><h1>🔄 Rotation Planner</h1><p class="sub">Algorithmic 3-season crop sequence optimizer balancing agronomy rules, soil moisture, and NASA climate patterns.</p></div><span class="pill">Moisture source: 🛰️ NASA Satellite GWETROOT</span></div>
+ <div class="grid g3" id="opts"></div><br>
+ <div class="grid" style="grid-template-columns:1fr 2fr">
+  <div><div class="card"><h3>🧑‍🌾 Farmer Priorities</h3><div id="prio"></div></div>
+   <div class="card"><h3>🌾 Current Crop</h3><p class="sub" style="font-size:14px">Select what is planted or was just harvested. The engine enforces disease-break rules.</p><select id="cur" style="width:100%"></select></div>
+   <div class="card"><h3>📊 Plan Comparison</h3><canvas id="chR"></canvas></div></div>
+  <div><div class="card"><h3>📅 Rotation Timeline</h3><div class="grid g3" id="tl"></div></div>
+   <div class="grid g2"><div class="card"><h3>✅ Benefits</h3><ul class="cl" id="ben"></ul></div><div class="card"><h3>⚠️ Risks</h3><ul class="cl" id="rsk"></ul></div></div></div></div>
+</section>
+
+<section class="page" id="whatif">
+ <h1>🔮 What-If Simulator</h1><p class="sub">Adjust climate parameters to see how rotation recommendations change. Evaluated instantly in the browser.</p>
+ <div class="grid g2"><div class="card"><h3>🌡️ Temperature Change</h3><div class="sl"><label><span>Global warming / heat wave shift</span><b id="dTv">+3°C</b></label><input type="range" id="dT" min="-5" max="12" step="1" value="3"></div></div>
+  <div class="card"><h3>🌧️ Rainfall Change</h3><div class="sl"><label><span>Drought / monsoon shift</span><b id="dRv">-30%</b></label><input type="range" id="dR" min="-80" max="100" step="5" value="-30"></div></div></div>
+ <div class="grid g2"><div class="card"><small style="color:var(--mu)">CURRENT STATUS QUO</small><div class="row"><h2 style="margin:6px 0">Baseline Recommendation</h2><span class="pts" id="bPts"></span></div><div class="grid g3" id="bSeasons"></div></div>
+  <div class="card" style="border-color:var(--g)"><small style="color:var(--g)" id="sTitle">STRESS SCENARIO</small><div class="row"><h2 style="margin:6px 0">Adapted Climate-Resilient Plan</h2><span class="pts" id="sPts"></span></div><div class="grid g3" id="sSeasons"></div><p id="why" style="color:var(--mu)"></p></div></div>
+</section>
+
+<section class="page" id="settings">
+ <h1>⚙️ Settings</h1><p class="sub">Hardware bridge parameters, localization, and report generation.</p>
+ <div class="card" style="max-width:1100px"><h3>🔌 Arduino Serial Port</h3>
+  <p>Status: <b id="stat3">Waiting for circuit</b> <span id="serr" style="color:var(--mu)"></span></p>
+  <div class="row" style="justify-content:flex-start"><div>Serial Port<br><input type="text" id="port" value="COM3" list="ports"><datalist id="ports"></datalist></div>
+   <div>Baud Rate<br><select id="baud"><option>9600</option><option>19200</option><option>57600</option><option>115200</option></select></div>
+   <div><br><button class="btn o" onclick="saveSerial()">Connect</button></div></div>
+  <p style="color:var(--mu);font-size:14px">Arduino must print one line per reading, e.g. <code>{"moisture":41.5,"temp":24.2,"n":30,"p":20,"k":150}</code></p></div>
+ <div class="card" style="max-width:1100px"><h3>🌐 Interface</h3><div class="row" style="justify-content:flex-start"><button class="btn" onclick="setTheme('light')">☀️ Light</button><button class="btn" onclick="setTheme('dark')">🌙 Dark</button></div></div>
+ <div class="card" style="max-width:1100px"><h3>📄 Export Field Report</h3><p>Download a summary report with NASA observations, sensor telemetry and the optimal rotation plan.</p><button class="btn" onclick="window.print()">📥 Download PDF Report</button></div>
+</section>
+</div>
+<footer><span>🟢 AgriRotate Decision Support System</span><span>Data: NASA POWER / NASA Earth Observations</span></footer>
+</main>
+
+<button id="chatBtn">🤖 Ask AgriBot</button>
+<div id="chat"><header>🤖 AgriBot</header><div id="msgs"></div>
+ <form id="cf"><input type="text" id="ci" placeholder="اسأل عن الطقس، المحصول، الحساسات… / Ask me anything"><button class="btn">Send</button></form></div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const S={lat:30.972,lon:40.949,nasa:null,sensor:null,hist:[],serial:'waiting',charts:{},opt:0,plans:[]};
+const PRESETS=[['Custom (default)',30.972,40.949],['Cairo, Egypt (Nile Delta)',30.04,31.24],['Alexandria',31.2,29.92],['Fayoum',29.31,30.84],['Minya (Upper Egypt)',28.11,30.75],['Aswan',24.09,32.9],['New Valley (Kharga)',25.44,30.55],['Sinai (North)',30.97,33.8]];
+/* ---------- navigation ---------- */
+$$('nav button').forEach(b=>b.onclick=()=>{$$('nav button').forEach(x=>x.classList.toggle('on',x==b));$$('.page').forEach(p=>p.classList.toggle('on',p.id==b.dataset.p));
+ if(b.dataset.p=='overview')setTimeout(()=>map.invalidateSize(),50);if(b.dataset.p=='nasa')drawNasaCharts();if(b.dataset.p=='planner')planner();if(b.dataset.p=='whatif')whatif();if(b.dataset.p=='sensors')drawLive();});
+function setTheme(t){document.documentElement.dataset.theme=t;localStorage.th=t}setTheme(localStorage.th||'dark');
+/* ---------- map ---------- */
+const map=L.map('map').setView([S.lat,S.lon],8),mk=L.marker([S.lat,S.lon]).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+map.on('click',e=>setLoc(e.latlng.lat,e.latlng.lng));
+$('#preset').innerHTML=PRESETS.map((p,i)=>`<option value="${i}">${p[0]}</option>`).join('');
+$('#preset').onchange=e=>{const p=PRESETS[e.target.value];setLoc(p[1],p[2],true)};
+function setLoc(la,lo,fly){S.lat=+la.toFixed(4);S.lon=+lo.toFixed(4);mk.setLatLng([S.lat,S.lon]);if(fly)map.setView([S.lat,S.lon],8);
+ $('#coords').textContent=`${S.lat}°N, ${S.lon}°E`;$('#ll').innerHTML=`Lat: <b style="color:var(--g)">${S.lat}</b>, Lon: <b style="color:var(--g)">${S.lon}</b>`;loadNASA()}
+/* ---------- NASA POWER ---------- */
+const PARAMS='T2M,T2M_MAX,T2M_MIN,PRECTOTCORR,RH2M,ALLSKY_SFC_SW_DWN,WS2M,GWETTOP,GWETROOT,GWETPROF';
+async function loadNASA(){
+ $('#upd').textContent='loading from NASA…';
+ const e=new Date(),s=new Date(e-89*864e5),f=d=>d.toISOString().slice(0,10).replace(/-/g,'');
+ try{const r=await fetch(`https://power.larc.nasa.gov/api/temporal/daily/point?parameters=${PARAMS}&community=AG&longitude=${S.lon}&latitude=${S.lat}&start=${f(s)}&end=${f(e)}&format=JSON`);
+  if(!r.ok)throw 0;const j=await r.json(),p=j.properties.parameter,days=Object.keys(p.T2M).sort();S.nasa={p,days};renderNasa();planner();whatif();
+ }catch(x){$('#upd').textContent='NASA API unreachable (check internet)'}}
+const ser=k=>S.nasa.days.map(d=>{const v=S.nasa.p[k][d];return v<=-990?null:v});
+const lastV=k=>{const a=ser(k).filter(v=>v!==null);return a.length?a[a.length-1]:null};
+const sum=(a)=>a.reduce((x,y)=>x+(y||0),0),fx=(v,n=1)=>v==null?'–':v.toFixed(n);
+function M(){const n=S.nasa,pr=ser('PRECTOTCORR'),tm=ser('T2M_MAX');let dry=0;for(let i=pr.length-1;i>=0&&(pr[i]||0)<1;i--)dry++;
+ const hot=tm.filter(v=>v>40).length,gw=lastV('GWETROOT');
+ let h=100-Math.min(30,hot/90*60)-Math.min(30,dry/3)-(gw!=null&&gw<.5?(.5-gw)*40:0);
+ return{t:lastV('T2M'),r7:sum(pr.slice(-7)),r30:sum(pr.slice(-30)),h:lastV('RH2M'),s:lastV('ALLSKY_SFC_SW_DWN'),w:lastV('WS2M'),gw,gt:lastV('GWETTOP'),gp:lastV('GWETPROF'),hot,dry,score:Math.max(0,h),
+  avgT:sum(ser('T2M').slice(-30))/30}}
+function renderNasa(){const m=M(),d=S.nasa.days[S.nasa.days.length-1];
+ $('#upd').textContent=`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6)}`;
+ $('#k_t').textContent=fx(m.t);$('#k_r7').textContent=fx(m.r7);$('#k_r30').textContent=fx(m.r30);$('#k_h').textContent=fx(m.h,0);$('#k_s').textContent=fx(m.s);$('#k_w').textContent=fx(m.w);$('#k_g').textContent=m.gw==null?'–':Math.round(m.gw*100);
+ $('#health').textContent=m.score.toFixed(1);$('#health').style.color=m.score>75?'var(--g)':m.score>50?'var(--y)':'var(--r)';
+ $('#healthTxt').textContent=m.score>75?'Good conditions':m.score>50?'Moderate stress conditions':'High stress conditions';
+ $('#alerts').innerHTML=(m.hot?`<div class="alert"><b>🔴 HEAT STRESS</b><br>Heat stress detected: ${m.hot} days above 40°C</div>`:'<div class="alert ok"><b>🟢 HEAT</b><br>No days above 40°C</div>')+
+  (m.dry>=7?`<div class="alert"><b>🔴 DROUGHT RISK</b><br>Drought risk: ${m.dry} consecutive days with &lt;1mm rainfall</div>`:'<div class="alert ok"><b>🟢 DROUGHT</b><br>No drought streak detected</div>');
+ const col=v=>v<.15?'#ef4444':v<.5?'#eab308':'#22c55e',g=(v,n,s)=>{const c=col(v||0),C=2*Math.PI*60;return`<div class="gauge"><svg viewBox="0 0 150 150"><circle cx="75" cy="75" r="60" fill="none" stroke="#374151" stroke-width="10"/><circle cx="75" cy="75" r="60" fill="none" stroke="${c}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${C*(v||0)} ${C}" transform="rotate(-90 75 75)"/><text x="75" y="82" text-anchor="middle" fill="${c}" font-size="28" font-weight="700">${v==null?'–':(v*100).toFixed(1)}</text></svg><div><b>${n}</b></div><small style="color:var(--mu)">${s}</small></div>`};
+ $('#gauges').innerHTML=g(m.gt,'Surface Wetness','GWETTOP (0-5cm)')+g(m.gw,'Root-Zone Wetness','GWETROOT (0-100cm)')+g(m.gp,'Profile Wetness','GWETPROF');
+ drawNasaCharts();cmp()}
+function chart(id,cfg){if(S.charts[id])S.charts[id].destroy();S.charts[id]=new Chart($('#'+id),cfg)}
+function drawNasaCharts(){if(!S.nasa)return;const L=S.nasa.days.map(d=>d.slice(4,6)+'/'+d.slice(6)),ln=(l,k,c)=>({label:l,data:ser(k),borderColor:c,pointRadius:0,tension:.3,borderWidth:2});
+ chart('chT',{type:'line',data:{labels:L,datasets:[ln('T2M_MAX','T2M_MAX','#ef4444'),ln('T2M','T2M','#10b981'),ln('T2M_MIN','T2M_MIN','#3b82f6')]},options:{plugins:{legend:{labels:{color:'#94a3b8'}}},scales:{x:{ticks:{color:'#94a3b8',maxTicksLimit:8}},y:{ticks:{color:'#94a3b8'}}}}});
+ chart('chP',{type:'bar',data:{labels:L,datasets:[{label:'mm',data:ser('PRECTOTCORR'),backgroundColor:'#3b82f6'}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#94a3b8',maxTicksLimit:8}},y:{ticks:{color:'#94a3b8'}}}}})}
+/* ---------- sensors (Arduino via WebSocket) ---------- */
+function connectWS(){const ws=new WebSocket((location.protocol=='https:'?'wss://':'ws://')+location.host);
+ ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.type=='status'){S.serial=m.status;if(m.cfg){$('#port').value=m.cfg.port;$('#baud').value=m.cfg.baud}$('#serr').textContent=m.error||'';stat()}
+  if(m.type=='reading'){S.sensor=m.data;S.hist.push(m.data);S.hist=S.hist.filter(x=>Date.now()-x.t<36e5);S.serial='connected';stat();sensors()}};
+ ws.onclose=()=>{S.serial='waiting';stat();setTimeout(connectWS,3000)}}
+function stat(){const ok=S.serial=='connected',t=ok?'● Circuit connected':S.serial=='no-module'?'● serialport module missing':'● Waiting for circuit';
+ ['#stat','#stat2'].forEach(i=>{$(i).textContent=t;$(i).className='pill '+(ok?'ok':'w')});$('#stat3').textContent=t.slice(2)}
+const badge=(el,v,lo,hi)=>{const b=$(el);if(v==null){b.textContent='UNKNOWN';b.className='badge';return}const ok=v>=lo&&v<=hi;b.textContent=ok?'OPTIMAL':v<lo?'LOW':'HIGH';b.className='badge '+(ok?'good':'mid')};
+function sensors(){const d=S.sensor||{},f=(v,u)=>v==null?'—':v+u;
+ $('#s_m').textContent=f(d.moisture,'%');$('#s_t').textContent=f(d.temp,'°C');$('#s_n').textContent=f(d.n,'');$('#s_p').textContent=f(d.p,'');$('#s_k').textContent=f(d.k,'');
+ badge('#b_m',d.moisture,35,70);badge('#b_t',d.temp,15,30);cmp();drawLive()}
+function cmp(){const d=S.sensor&&S.sensor.moisture,g=S.nasa&&lastV('GWETROOT');$('#cmpN').textContent=g==null?'—':(g*100).toFixed(1)+'%';
+ $('#cmpS').textContent=d==null?'—':d+'%';if(d!=null&&g!=null){const x=d-g*100;$('#cmpD').textContent=(x>0?'+':'')+x.toFixed(1)+'%';$('#cmpT').textContent=Math.abs(x)<10?'Well calibrated':'Check sensor / calibrate'}}
+function drawLive(){if(!S.hist.length)return;$('#waitMsg').style.display='none';$('#chL').style.display='block';
+ chart('chL',{type:'line',data:{labels:S.hist.map(x=>new Date(x.t).toLocaleTimeString()),datasets:[{label:'Moisture %',data:S.hist.map(x=>x.moisture),borderColor:'#3b82f6'},{label:'Soil Temp °C',data:S.hist.map(x=>x.temp),borderColor:'#ef4444'}]},options:{animation:false,plugins:{legend:{labels:{color:'#94a3b8'}}},scales:{x:{ticks:{color:'#94a3b8',maxTicksLimit:6}},y:{ticks:{color:'#94a3b8'}}}}})}
+async function saveSerial(){await fetch('/api/serial',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({port:$('#port').value,baud:$('#baud').value})})}
+fetch('/api/ports').then(r=>r.json()).then(a=>$('#ports').innerHTML=a.map(p=>`<option value="${p}">`).join('')).catch(()=>{});
+/* ---------- rotation engine ---------- */
+// n:name, f:family, fix:nitrogen fixer, root, w:water need, dr:drought tol, ht:heat tol, pr:profit, c:input cost, d:days
+const CROPS=[
+ {n:'Chickpea',f:'Fabaceae',fix:1,root:'deep',w:3,dr:8,ht:6,pr:6,c:2,d:100},{n:'Lentil',f:'Fabaceae',fix:1,root:'medium',w:3,dr:7,ht:5,pr:6,c:2,d:100},
+ {n:'Faba Bean',f:'Fabaceae',fix:1,root:'deep',w:5,dr:5,ht:4,pr:6,c:3,d:110},{n:'Cover Crops Mix',f:'Mixed',fix:1,root:'medium',w:2,dr:6,ht:6,pr:1,c:1,d:60},
+ {n:'Wheat',f:'Poaceae',root:'medium',w:5,dr:5,ht:5,pr:7,c:5,d:120},{n:'Barley',f:'Poaceae',root:'medium',w:4,dr:7,ht:6,pr:5,c:3,d:100},
+ {n:'Sorghum',f:'Poaceae',root:'deep',w:3,dr:9,ht:9,pr:5,c:3,d:110},{n:'Maize',f:'Poaceae',root:'medium',w:7,dr:4,ht:5,pr:8,c:7,d:110},
+ {n:'Sunflower',f:'Asteraceae',root:'deep',w:4,dr:7,ht:7,pr:7,c:4,d:100},{n:'Tomato',f:'Solanaceae',root:'shallow',w:7,dr:4,ht:5,pr:9,c:8,d:110},
+ {n:'Rice',f:'Poaceae',root:'shallow',w:10,dr:2,ht:5,pr:7,c:6,d:130},{n:'Cotton',f:'Malvaceae',root:'deep',w:6,dr:6,ht:8,pr:7,c:6,d:150}];
+const PR=[['soil','🌱 Soil Health'],['water','💧 Water Conservation'],['profit','💰 Profit'],['res','☀️ Drought/Heat Resilience'],['cost','📉 Low Input Cost']];
+$('#prio').innerHTML=PR.map(p=>`<div class="sl"><label><span>${p[1]}</span><b id="v_${p[0]}">5/10</b></label><input type="range" min="0" max="10" value="5" id="p_${p[0]}"></div>`).join('');
+PR.forEach(p=>$('#p_'+p[0]).oninput=e=>{$('#v_'+p[0]).textContent=e.target.value+'/10';planner()});
+$('#cur').innerHTML='<option value="">-- Select current crop... --</option>'+CROPS.map(c=>`<option>${c.n}</option>`).join('');$('#cur').onchange=planner;
+const W=()=>Object.fromEntries(PR.map(p=>[p[0],+$('#p_'+p[0]).value]));
+function parts(c,cl){const eff=Math.min(10,Math.max(0,c.w*(1+cl.dT*.06)/cl.rf)),stress=Math.max(0,cl.dT)*.4+Math.max(0,1-cl.rf)*4;
+ return{soil:c.fix?10:3,water:10-eff,profit:c.pr,res:Math.max(0,(c.dr+c.ht)/2)/(1+stress/4),cost:10-c.c}}
+function score(c,w,cl){const s=parts(c,cl),t=Object.values(w).reduce((a,b)=>a+b,0)||1;return Object.keys(w).reduce((a,k)=>a+w[k]*s[k],0)/t*10}
+function best(w,cl,cur){const out=[],cc=CROPS.find(c=>c.n==cur);
+ for(const a of CROPS)for(const b of CROPS)for(const c of CROPS){
+  if(a.f==b.f&&a.f!='Mixed'||b.f==c.f&&b.f!='Mixed'||a==b||b==c)continue;
+  let adj=0;if(cc&&cc.f==a.f&&a.f!='Mixed')adj-=12;if(!(a.fix||b.fix||c.fix))adj-=8;
+  const ss=[a,b,c].map(x=>score(x,w,cl));out.push({seq:[a,b,c],ss,total:ss.reduce((x,y)=>x+y,0)/3+adj,parts:PR.map(p=>([a,b,c].reduce((s,x)=>s+parts(x,cl)[p[0]],0)/3*10))})}
+ out.sort((x,y)=>y.total-x.total);return out.slice(0,3)}
+function planner(){if(!S.nasa)return;const w=W();S.plans=best(w,{dT:0,rf:1},$('#cur').value);if(S.opt>2)S.opt=0;drawPlan()}
+function drawPlan(){const P=S.plans;$('#opts').innerHTML=P.map((p,i)=>`<div class="opt ${i==S.opt?'on':''}" onclick="S.opt=${i};drawPlan()">OPTION #${i+1}<span class="pts">★ ${p.total.toFixed(1)} pts</span><b>${p.seq.map(c=>c.n).join(' → ')}</b><small style="color:var(--g)">${p.seq.some(c=>c.fix)?'✔ Legume/N-fixer included':''}</small></div>`).join('');
+ const p=P[S.opt];$('#tl').innerHTML=p.seq.map((c,i)=>`<div class="season"><small>SEASON ${i+1} • ~${c.d} days</small><h2>${c.n}</h2><span class="tag">${c.f}</span>${c.fix?'<span class="tag n">N-Fixer</span>':'<span class="tag n" style="background:#78350f;color:#fde68a">Feeder</span>'}<span class="tag r">Root: ${c.root}</span><span class="tag">💧 ${c.w}/10</span><p style="color:var(--mu)">Season subscore: <b style="color:var(--tx)">${p.ss[i].toFixed(1)}</b></p></div>`).join('');
+ $('#ben').innerHTML=[...new Set(p.seq.filter(c=>c.fix).map(c=>`<li>✅ ${c.n} fixes nitrogen, improving soil fertility</li>`)),...p.seq.filter(c=>c.dr>=8).map(c=>`<li>✅ ${c.n} is highly drought tolerant</li>`)].join('')||'<li>—</li>';
+ $('#rsk').innerHTML=p.seq.filter(c=>c.pr<=2).map(c=>`<li>⚠️ ${c.n} has lower market value; offset by agronomic benefits</li>`).concat(p.seq.filter(c=>c.w>=7).map(c=>`<li>⚠️ ${c.n} needs lots of water</li>`)).join('')||'<li>No major risks detected</li>';
+ chart('chR',{type:'radar',data:{labels:['Soil','Water','Profit','Resilience','Low Cost'],datasets:P.map((q,i)=>({label:'Option #'+(i+1),data:q.parts,borderColor:['#22c55e','#3b82f6','#f59e0b'][i],backgroundColor:['#22c55e33','#3b82f633','#f59e0b33'][i]}))},options:{scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:'#475569'},pointLabels:{color:'#94a3b8'}}},plugins:{legend:{labels:{color:'#94a3b8'}}}}})}
+/* ---------- what-if ---------- */
+function whatif(){if(!S.nasa)return;const dT=+$('#dT').value,dR=+$('#dR').value;$('#dTv').textContent=(dT>0?'+':'')+dT+'°C';$('#dRv').textContent=(dR>0?'+':'')+dR+'%';
+ const w=W(),cur=$('#cur').value,B=best(w,{dT:0,rf:1},cur)[0],X=best(w,{dT,rf:1+dR/100||.05},cur)[0],base=B.seq.map(c=>c.n);
+ const show=(o,ref)=>o.seq.map((c,i)=>`<div class="season" style="${ref&&ref[i]!=c.n?'border-color:#f59e0b;background:#78350f33':''}"><small>SEASON ${i+1} ${ref&&ref[i]!=c.n?'<b style="color:#f59e0b">NEW</b>':''}</small><h3 style="margin:6px 0">${c.n}</h3><small style="color:var(--g)">${c.fix?'Fixer':'Feeder'}</small></div>`).join('');
+ $('#bSeasons').innerHTML=show(B);$('#bPts').textContent=B.total.toFixed(1)+' pts';$('#sSeasons').innerHTML=show(X,base);$('#sPts').textContent=X.total.toFixed(1)+' pts';
+ $('#sTitle').textContent=`STRESS SCENARIO (${dT>0?'+':''}${dT}°C, ${dR>0?'+':''}${dR}% RAIN)`;
+ $('#why').innerHTML='<b>Engine Adaptation Rationale:</b><br>'+(X.seq.map(c=>c.n).join()==base.join()?'The baseline plan is already robust under this scenario.':'Under this climate stress the algorithm downranks water-demanding crops and favors deep-rooted, drought/heat-tolerant ones to protect soil fertility and yield.')}
+$('#dT').oninput=whatif;$('#dR').oninput=whatif;
+/* ---------- chatbot ---------- */
+const add=(t,c)=>{const d=document.createElement('div');d.className='m '+c;d.textContent=t;$('#msgs').appendChild(d);$('#msgs').scrollTop=1e9};
+$('#chatBtn').onclick=()=>{$('#chat').classList.toggle('on');if(!$('#msgs').children.length)add('أهلاً! أنا AgriBot 🌱 اسألني عن الطقس، رطوبة التربة، الحساسات أو خطة الدورة الزراعية.\nHi! Ask me about weather, soil moisture, sensors or the rotation plan.','b')};
+function bot(q){const ar=/[\u0600-\u06FF]/.test(q),t=q.toLowerCase(),h=(...a)=>a.some(x=>t.includes(x)),T=(a,e)=>ar?a:e;
+ if(!S.nasa)return T('لسه بحمّل بيانات ناسا… جرب كمان شوية.','NASA data is still loading, try again shortly.');
+ const m=M(),p=S.plans[S.opt];
+ if(h('rotation','plan','محصول','دورة','زراع','ازرع','أزرع'))return p?T(`أفضل خطة دلوقتي: ${p.seq.map(c=>c.n).join(' ← ')} (${p.total.toFixed(1)} نقطة).`,`Best plan now: ${p.seq.map(c=>c.n).join(' → ')} (${p.total.toFixed(1)} pts).`):'…';
+ if(h('sensor','حساس','دائرة','arduino','اردوينو'))return S.sensor?T(`قراءات الحساس: رطوبة ${S.sensor.moisture??'—'}% ، حرارة التربة ${S.sensor.temp??'—'}°م.`,`Sensor: moisture ${S.sensor.moisture??'—'}%, soil temp ${S.sensor.temp??'—'}°C.`):T('الحساسات مستنية توصيل الدائرة (Arduino). أول ما تتوصل القراءات هتظهر هنا.','Sensors are waiting for the Arduino circuit. Readings will appear once connected.');
+ if(h('rain','مطر','أمطار','امطار'))return T(`المطر آخر 7 أيام: ${m.r7.toFixed(1)} مم، وآخر 30 يوم: ${m.r30.toFixed(1)} مم.`,`Rain: ${m.r7.toFixed(1)} mm (7 days), ${m.r30.toFixed(1)} mm (30 days).`);
+ if(h('temp','حرار','طقس','weather','درجة'))return T(`الحرارة الحالية ${fx(m.t)}°م، رطوبة الهواء ${fx(m.h,0)}%، وأيام فوق 40°م: ${m.hot}.`,`Temp ${fx(m.t)}°C, humidity ${fx(m.h,0)}%, days above 40°C: ${m.hot}.`);
+ if(h('moist','wet','رطوبة','تربة','soil','ري','irrig'))return T(`رطوبة المنطقة الجذرية من ناسا: ${fx(m.gw*100,0)}%. ${m.gw<.3?'منخفضة — يفضل ري أو محاصيل مقاومة للجفاف.':'مقبولة.'}`,`NASA root-zone wetness: ${fx(m.gw*100,0)}%. ${m.gw<.3?'Low — consider irrigation or drought-tolerant crops.':'Acceptable.'}`);
+ if(h('drought','جفاف'))return T(`عدد الأيام المتتالية بدون مطر: ${m.dry}. ${m.dry>=7?'في خطر جفاف.':'مفيش خطر جفاف حالياً.'}`,`Dry streak: ${m.dry} days. ${m.dry>=7?'Drought risk!':'No drought risk now.'}`);
+ if(h('health','صحة','score','تقييم'))return T(`تقييم صحة المزرعة: ${m.score.toFixed(1)} من 100.`,`Farm health score: ${m.score.toFixed(1)}/100.`);
+ return T('ممكن تسألني عن: الطقس، المطر، رطوبة التربة، الجفاف، الحساسات، أو خطة الدورة الزراعية.','Try asking about: weather, rain, soil moisture, drought, sensors, or the rotation plan.')}
+$('#cf').onsubmit=e=>{e.preventDefault();const q=$('#ci').value.trim();if(!q)return;add(q,'u');$('#ci').value='';setTimeout(()=>add(bot(q),'b'),300)};
+/* ---------- init ---------- */
+$('#coords').textContent=`${S.lat}°N, ${S.lon}°E`;setLoc(S.lat,S.lon);stat();connectWS();
+</script></body></html>
